@@ -17,7 +17,7 @@ AndroidStr is a python script and requires you to have python installed on your 
 
 Just provide the path to the `res` folder of your android project and AndroidStr will read the default `strings.xml` as well as the `strings.xml` of all languages you may already have in your project.
 
-1. Download AndroidStr. Open your terminal/command prompt and cd to AndroidStr.
+1. Download AndroidStr. Open your terminal/command prompt and cd to AndroidStr directory.
 
 2. Once in AndroidStr, type in the following and hit enter.
 
