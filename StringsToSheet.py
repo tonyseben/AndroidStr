@@ -63,6 +63,7 @@ def createWorkbook():
 
     BOOK = openpyxl.Workbook()
     SHEET = BOOK.active
+    SHEET.title = "Translations"
     SHEET.row_dimensions[ROW_LANG_CODE].hidden= True
 
 
@@ -85,14 +86,14 @@ def getRowForKey(key):
 
 def saveWorkbook():
     global BOOK
-    BOOK.save("Strings.xls")
+    BOOK.save("Strings.xlsx")
     print("Workbook saved!")
 
 
 def isValidFile(path):
     isFile = os.path.isfile(path)
     if not isFile:
-        print("Error! Path invalid : " + defaultStrPath)
+        print("Error! Path invalid : " + path)
     return isFile
 
 
