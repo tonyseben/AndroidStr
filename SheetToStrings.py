@@ -2,6 +2,7 @@ import os
 import os.path
 import sys
 import math
+import time
 from openpyxl import load_workbook
 
 
@@ -57,7 +58,8 @@ def generateString(langColumn):
 
     lang = SHEET.cell(ROW_HEADING, langColumn).value
     langCode = SHEET.cell(ROW_LANG_CODE, langColumn).value
-    print("Generating strings for language %s(%s) ..." % (lang, langCode))
+    langDisplay = "%s (%s)" %(lang, langCode)
+    #print("Generating strings for language %s(%s) ..." % (lang, langCode))
     
     # Create directory for language.
     dirPath = "./res/values-" + langCode
@@ -66,13 +68,13 @@ def generateString(langColumn):
     strFile = open(dirPath + "/strings.xml", 'w')
 
     strFile.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n")
-    for row in range(ROW_START, ROW_MAX):
+    for row in range(ROW_START, ROW_MAX+1):
         key = SHEET.cell(row, COL_KEY).value
-        value = SHEET.cell(row, langColumn).value
+        value = SHEET.cell(row, langColumn).value.rstrip("\n")
 
         if(key is not None):
             strFile.write("\n<string name=\"%s\">%s</string>" %(key, value))
-        showProgress("%s (%s)" %(lang, langCode) , row)
+        showProgress(langDisplay , row)
 
     sys.stdout.write("\n")
     strFile.write("\n\n</resources>")
@@ -87,18 +89,27 @@ def showProgress(langDisplay, currentRow):
     row = currentRow - ROW_START
     progress = math.ceil(row/total*100)
 
-    sys.stdout.write('\rLanguage {0} {1}%'.format(langDisplay, progress))
+    sys.stdout.write('\r* {0} {1}%'.format(langDisplay, progress))
     sys.stdout.flush()
 
+def convertMillis(milli):
+    seconds=(milli/1000)%60
+    minutes=(milli/(1000*60))%60
+    return "%d minutes %d seconds" % (minutes, seconds)
 
 #**************************************************************#
 
+startTime = int(round(time.time() * 1000))
+
 if isValidFile(BOOK_FILE) and verifySheetFormat(BOOK_FILE):
+    print("Sheet to Strings: START")
+    for col in range(COL_START, COL_MAX):
+        if SHEET.cell(ROW_LANG_CODE, col).value is not None:
+            generateString(col)
+    print("Sheet to Strings: COMPLETE")
 
-    generateString(COL_START)
-    #getLanguageCodes()
-
-    #generateDefaultStrings(keysList)
-    #generateStrings(keysList, langCodesList)
+finishTime = int(round(time.time() * 1000))
+time = finishTime - startTime
+print("Completed in %s\n" % convertMillis(time))
 
 
