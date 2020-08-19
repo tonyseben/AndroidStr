@@ -6,11 +6,11 @@ import time
 from openpyxl import load_workbook
 
 
-BOOK_FILE = "/Users/tonyseben/Projects/PythonProjects/NodleCash_Strings_20200603-Final.xlsx"
+BOOK_FILE = "/Users/tonyseben/Downloads/CoalitionV2Strings.xlsx"
 COL_SLNO = 1
 COL_KEY = 2
 COL_DEFAULT = 3
-COL_START = 4
+COL_START = 3
 COL_MAX = -1
 
 ROW_HEADING = 1
@@ -18,6 +18,9 @@ ROW_LANG_CODE = 2
 # Empty row in row 3
 ROW_START = 4
 ROW_MAX = -1
+
+ROW_EMPTY_LIMIT = 20
+COL_EMPTY_LIMIT = 10
 
 BOOK = None
 SHEET = None
@@ -62,24 +65,55 @@ def generateString(langColumn):
     #print("Generating strings for language %s(%s) ..." % (lang, langCode))
     
     # Create directory for language.
-    dirPath = "./res/values-" + langCode
+    dirPath = "./res/values"
+    if(langCode != "default"):
+        dirPath += "-" + langCode
     os.makedirs(dirPath, exist_ok=True)
 
     strFile = open(dirPath + "/strings.xml", 'w')
-
     strFile.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n")
-    for row in range(ROW_START, ROW_MAX+1):
-        key = SHEET.cell(row, COL_KEY).value
-        value = SHEET.cell(row, langColumn).value.rstrip("\n")
 
-        if(key is not None):
-            strFile.write("\n<string name=\"%s\">%s</string>" %(key, value))
+    strCount = 0
+    skipCount = 0
+    modCount = 0
+    rowEmptyCount = 0
+
+    for row in range(ROW_START, ROW_MAX+1):
+        if rowEmptyCount >= ROW_EMPTY_LIMIT:
+            sys.stdout.write("\t| Aborted row scan after %d empty rows." %(ROW_EMPTY_LIMIT))
+            break
+
+        key = SHEET.cell(row, COL_KEY).value
+        rawValue = SHEET.cell(row, langColumn).value
+
+        if(key is not None and rawValue is not None):
+            rowEmptyCount = 0
+            value = formatString(rawValue)
+            if(value != rawValue):
+                modCount += 1
+
+            if(value.strip()):
+                strFile.write("\n\t<string name=\"%s\">%s</string>" %(key, value))
+                strCount += 1
+            else: skipCount += 1
+        
+        else:
+            rowEmptyCount += 1
+
         showProgress(langDisplay , row)
 
-    sys.stdout.write("\n")
+    sys.stdout.write("\t| Count:%d, Skip:%d | Modified:%d\n" % (strCount, skipCount, modCount))
     strFile.write("\n\n</resources>")
     strFile.close()
 
+def formatString(strValue):
+    #print("formatString " + strValue)
+    value = strValue.lstrip("\n").rstrip("\n")
+    value = value.replace("\\\'", "\'")
+    value = value.replace("\'", "\\\'")
+    value = value.replace("\\\"", "\"")
+    value = value.replace("\"", "\\\"")
+    return value
 
 def showProgress(langDisplay, currentRow):
     global ROW_START
@@ -103,13 +137,23 @@ startTime = int(round(time.time() * 1000))
 
 if isValidFile(BOOK_FILE) and verifySheetFormat(BOOK_FILE):
     print("Sheet to Strings: START")
+    colEmptyCount = 0
+
     for col in range(COL_START, COL_MAX):
+        if colEmptyCount >= COL_EMPTY_LIMIT:
+            print("\nPossible end of columns. Detected %d empty columns." %(COL_EMPTY_LIMIT))
+            break
+
         if SHEET.cell(ROW_LANG_CODE, col).value is not None:
+            colEmptyCount = 0
             generateString(col)
+        else:
+            colEmptyCount += 1
+
     print("Sheet to Strings: COMPLETE")
 
 finishTime = int(round(time.time() * 1000))
 time = finishTime - startTime
-print("Completed in %s\n" % convertMillis(time))
+print("Completed in %s\n" % convertMillis(time)) 
 
 
